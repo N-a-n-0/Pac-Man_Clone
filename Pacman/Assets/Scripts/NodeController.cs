@@ -23,9 +23,13 @@ public class NodeController : MonoBehaviour
     //If the node still has a pellet
     public bool hasPellet = false;
 
+    public bool isGhostStartingNode = false;
+
     public SpriteRenderer pelletSprite;
 
     public GameManager gameManager;
+
+    public bool isSlideNode = false;
 
     // Start is called before the first frame update
     void Awake()
@@ -34,6 +38,7 @@ public class NodeController : MonoBehaviour
 
         if (transform.childCount > 0)
         {
+            gameManager.GotPelletFromNodeController(this);
             hasPellet = true;
             isPelletNode = true;
             pelletSprite = GetComponentInChildren<SpriteRenderer>();
@@ -107,13 +112,26 @@ public class NodeController : MonoBehaviour
             }
         }
 
-      
+      if(isGhostStartingNode)
+        {
+            canMoveDown = true;
+            nodeDown = gameManager.ghostNodeCenter;
+        }
     }
 
     // Update is called once per frame
     void Update()
     {
         
+    }
+
+    public void RespawnPellet()
+    {
+        if(isPelletNode)
+        {
+            hasPellet = true;
+            pelletSprite.enabled = true;
+        }
     }
 
     public GameObject GetNodeFromDirection(string direction)
@@ -148,6 +166,7 @@ public class NodeController : MonoBehaviour
             pelletSprite.enabled = false;
             gameManager.CollectedPellet(this);
 
+            StartCoroutine(gameManager.CollectedPellet(this));
         }
     }
 }

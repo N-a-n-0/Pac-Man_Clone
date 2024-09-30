@@ -19,13 +19,17 @@ public class MovementController : MonoBehaviour
     // Start is called before the first frame update
     void Awake()
     {
-      //  lastMovingDirection = "left";
+        lastMovingDirection = "left";
         gameManager = GameObject.Find("GameManager").GetComponent<GameManager>();
     }
 
     // Update is called once per frame
     void Update()
     {
+        if (!gameManager.gameIsRunning)
+        {
+            return;
+        }
         NodeController currentNodeController = currentNode.GetComponent<NodeController>();
 
         transform.position = Vector2.MoveTowards(transform.position, currentNode.transform.position, speed * Time.deltaTime);
@@ -71,6 +75,13 @@ public class MovementController : MonoBehaviour
             //otherwise, find the next node we are going to be moving towards
             else
             {
+                //If we are not a ghost that is respawning, and we are on the start node, and we are trying to move down, stop
+                if(currentNodeController.isGhostStartingNode && direction == "down" 
+                    && (!isGhost || GetComponent<EnemyController>().ghostNodeState != EnemyController.GhostNodeStatesEnum.respawning))
+                {
+                    direction = lastMovingDirection;
+                }
+
                 //Get the next node from our node controller using our current direction
                 GameObject newNode = currentNodeController.GetNodeFromDirection(direction);
                 if (newNode != null)
@@ -98,6 +109,10 @@ public class MovementController : MonoBehaviour
         }
     }
 
+    public void SetSpeed(float newSpeed)
+    {
+        speed = newSpeed;
+    }
 
     public void SetDirection(string newDirection)
     {
