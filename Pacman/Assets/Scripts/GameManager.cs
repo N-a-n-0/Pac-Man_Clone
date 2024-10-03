@@ -13,6 +13,13 @@ public class GameManager : MonoBehaviour
     public AudioSource siren;
     public AudioSource munch1;
     public AudioSource munch2;
+
+   
+    public float currentPowerPelletTime = 0;
+    public float powerPelletTimer = 8f;
+    public int powerPelletMultiplyer = 1;
+
+
     public int currentMunch = 0;
 
     public int score;
@@ -55,6 +62,12 @@ public class GameManager : MonoBehaviour
     public Image blackBackground;
 
     public Text gameOverText;
+
+    public AudioSource powerPelletAudio;
+    public AudioSource respawningAudio;
+    public AudioSource ghostEatenAudio;
+
+    public bool isPowerPelletRunning = false;
     public enum GhostMode
     {
         chase, scatter
@@ -63,7 +76,14 @@ public class GameManager : MonoBehaviour
     public GhostMode currentGhostMode;
 
 
+    public int[] ghostModeTimers = new int[] { 7, 20, 7, 20, 5, 20, 5 };
+    public int ghostModeTimerIndex;
+    public float ghostModeTimer = 0;
+    public bool runningTimer;
+    public bool completedTimer;
 
+
+    
     // Start is called before the first frame update
     void Awake()
     {
@@ -85,6 +105,10 @@ public class GameManager : MonoBehaviour
 
     public IEnumerator Setup()
     {
+        ghostModeTimerIndex = 0;
+        ghostModeTimer = 0;
+        completedTimer = false;
+        runningTimer = true;
 
         gameOverText.enabled = false;
         //If pacman clears a level, a background will appears covering the level, and the game will pause for 0.1 seconds
@@ -159,13 +183,79 @@ public class GameManager : MonoBehaviour
     {
         gameIsRunning = false;
         siren.Stop();
+        powerPelletAudio.Stop();
         pacman.GetComponent<PlayerController>().Stop();
     }
 
     // Update is called once per frame
     void Update()
     {
-        
+        if(!gameIsRunning)
+        {
+            return;
+        }
+
+
+        if(redGhostController.ghostNodeState == EnemyController.GhostNodeStatesEnum.respawning
+            || pinkGhostController.ghostNodeState == EnemyController.GhostNodeStatesEnum.respawning
+            || blueGhostController.ghostNodeState == EnemyController.GhostNodeStatesEnum.respawning
+            || orangeGhostController.ghostNodeState == EnemyController.GhostNodeStatesEnum.respawning)
+        {
+            if(!respawningAudio.isPlaying)
+            {
+                respawningAudio.Play();
+            }
+
+        }
+        else
+        {
+            if(respawningAudio.isPlaying)
+            {
+                respawningAudio.Stop();
+            }
+        }
+
+        if(!completedTimer && runningTimer)
+        {
+            ghostModeTimer += Time.deltaTime;
+
+            if (ghostModeTimer >= ghostModeTimers[ghostModeTimerIndex])
+            {
+                ghostModeTimer = 0;
+                ghostModeTimerIndex++;
+                if(currentGhostMode == GhostMode.chase)
+                {
+                    currentGhostMode = GhostMode.scatter;
+                }
+                else
+                {
+                    currentGhostMode = GhostMode.chase;
+                }
+
+                if(ghostModeTimerIndex == ghostModeTimers.Length)
+                {
+                    completedTimer = true;
+                    runningTimer = false;
+                    currentGhostMode = GhostMode.chase;
+                }
+
+            }
+        }
+
+        if(isPowerPelletRunning)
+        {
+            currentPowerPelletTime += Time.deltaTime;
+            if(currentPowerPelletTime >= powerPelletTimer)
+            {
+                isPowerPelletRunning = false;
+                currentPowerPelletTime = 0;
+
+                powerPelletAudio.Stop();
+                siren.Play();
+                powerPelletMultiplyer = 1;
+            }
+        }
+
     }
 
 
@@ -240,8 +330,35 @@ public class GameManager : MonoBehaviour
          
 
         //power pellet
+        if(nodeController.isPowerPellet)
+        {
+            siren.Stop();
+            powerPelletAudio.Play();
+            isPowerPelletRunning = true;
+            currentPowerPelletTime = 0;
+          //  powerPelletMultiplyer += 1;
+
+            redGhostController.SetFrightened(true);
+            pinkGhostController.SetFrightened(true);
+            blueGhostController.SetFrightened(true);
+            orangeGhostController.SetFrightened(true);
+        }
     }
 
+    public IEnumerator PauseGame(float timeToPause)
+    {
+        gameIsRunning = false;
+        yield return new WaitForSeconds(timeToPause);
+        gameIsRunning = true;
+    }
+
+    public void GhostEaten()
+    {
+        ghostEatenAudio.Play();
+        AddToScore(400 * powerPelletMultiplyer);
+        powerPelletMultiplyer++;
+        StartCoroutine(PauseGame(1));
+    }
 
     public IEnumerator playerEaten()
     {
