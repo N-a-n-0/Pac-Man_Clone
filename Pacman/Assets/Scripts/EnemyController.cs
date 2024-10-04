@@ -181,6 +181,7 @@ public class EnemyController : MonoBehaviour
         else
         {
             animator.SetBool("frightened", false);
+            animator.SetBool("frightenedBlinking", false);
             ghostSprite.color = color;
         }
 
@@ -189,6 +190,14 @@ public class EnemyController : MonoBehaviour
             return;
         }
 
+        if(gameManager.powerPelletTimer - gameManager.currentPowerPelletTime <= 3)
+        {
+            animator.SetBool("frightenedBlinking", true);
+        }
+        else
+        {
+            animator.SetBool("frightenedBlinking", false);
+        }
         
         animator.SetBool("moving", true);
         if (testRespawn == true)
@@ -204,7 +213,19 @@ public class EnemyController : MonoBehaviour
         }    
         else
         {
-            movementController.SetSpeed(1);
+            if (isFrightened)
+            {
+                movementController.SetSpeed(1);
+            }
+           else if(ghostNodeState == GhostNodeStatesEnum.respawning)
+            {
+                movementController.SetSpeed(7);
+            }
+            else
+            {
+                movementController.SetSpeed(2);
+            }
+            
         }
     }
 

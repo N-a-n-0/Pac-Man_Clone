@@ -17,6 +17,8 @@ public class PlayerController : MonoBehaviour
 
     public GameManager gameManager;
 
+    public bool isDead = false;
+
     void Awake()
     {
         gameManager = GameObject.Find("GameManager").GetComponent<GameManager>();
@@ -31,6 +33,7 @@ public class PlayerController : MonoBehaviour
 
     public void Setup()
     {
+        isDead = false;
         animator.SetBool("dead", false);
         animator.SetBool("moving", false);
 
@@ -58,9 +61,14 @@ public class PlayerController : MonoBehaviour
         
         if(!gameManager.gameIsRunning)
         {
+            if(!isDead)
+            {
+                animator.speed = 0;
+            }
+             
             return;
         }
-
+        animator.speed = 1;
         animator.SetBool("moving", true);
 
         if(Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.A))
@@ -108,8 +116,10 @@ public class PlayerController : MonoBehaviour
 
     public void Death()
     {
+        isDead = true;
         animator.SetBool("moving", false);
         animator.speed = 1;
         animator.SetBool("dead", true);
+         
     }
 }
